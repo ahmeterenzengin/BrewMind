@@ -41,34 +41,42 @@ class CoffeeSearchView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # 1. Embed query (lazy import so startup is instant)
-        from rag.embeddings import get_embedding
-        query_vector = get_embedding(query)
+        try:
+            # 1. Embed query (lazy import so startup is instant)
+            from rag.embeddings import get_embedding
+            query_vector = get_embedding(query)
 
-        # 2. Retrieve similar coffees
-        results = search_similar_coffees(query_vector, top_k=5)
+            # 2. Retrieve similar coffees
+            results = search_similar_coffees(query_vector, top_k=5)
 
-        # 3. Generate LLM response
-        llm_response = generate_recommendation(query, results)
+            # 3. Generate LLM response
+            llm_response = generate_recommendation(query, results)
 
-        # 4. Log the search (log top result)
-        if results:
-            top = results[0]
-            SearchLog.objects.create(
-                query_text=query,
-                recommended_coffee=top["coffee"],
-                similarity_score=top["similarity_score"],
-                llm_response=llm_response,
+            # 4. Log the search (log top result)
+            if results:
+                top = results[0]
+                SearchLog.objects.create(
+                    query_text=query,
+                    recommended_coffee=top["coffee"],
+                    similarity_score=top["similarity_score"],
+                    llm_response=llm_response,
+                )
+
+            # 5. Serialize and return
+            response_data = {
+                "query": query,
+                "results": results,
+                "llm_response": llm_response,
+            }
+            serializer = SearchResponseSerializer(response_data)
+            return Response(serializer.data)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return Response(
+                {"error": str(e), "results": [], "llm_response": "Searching temporarily unavailable."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-
-        # 5. Serialize and return
-        response_data = {
-            "query": query,
-            "results": results,
-            "llm_response": llm_response,
-        }
-        serializer = SearchResponseSerializer(response_data)
-        return Response(serializer.data)
 
 
 class CoffeeSelectView(APIView):
