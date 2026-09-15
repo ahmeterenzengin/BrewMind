@@ -1,16 +1,15 @@
-﻿"""
+"""
 Embedding service using sentence-transformers.
 Model: all-MiniLM-L6-v2 (384 dimensions)
 """
-from sentence_transformers import SentenceTransformer
-
 _model = None
 
 
-def get_model() -> SentenceTransformer:
+def get_model():
     """Lazy-load the embedding model (singleton)."""
     global _model
     if _model is None:
+        from sentence_transformers import SentenceTransformer
         print("[Embeddings] Loading sentence-transformers model...")
         _model = SentenceTransformer("all-MiniLM-L6-v2")
         print("[Embeddings] Model loaded.")

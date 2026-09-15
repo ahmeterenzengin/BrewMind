@@ -5,7 +5,6 @@ from django.shortcuts import get_object_or_404
 
 from .models import Coffee, SearchLog, CoffeeOrder
 from .serializers import CoffeeSerializer, SearchResponseSerializer
-from rag.embeddings import get_embedding
 from rag.retriever import search_similar_coffees
 from rag.generator import generate_recommendation
 
@@ -42,7 +41,8 @@ class CoffeeSearchView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # 1. Embed query
+        # 1. Embed query (lazy import so startup is instant)
+        from rag.embeddings import get_embedding
         query_vector = get_embedding(query)
 
         # 2. Retrieve similar coffees
