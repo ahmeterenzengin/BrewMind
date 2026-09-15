@@ -1,4 +1,4 @@
-﻿from rest_framework.views import APIView
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
@@ -12,6 +12,7 @@ from rag.generator import generate_recommendation
 
 class CoffeeListView(APIView):
     """GET /api/coffee/ - List all coffees"""
+    authentication_classes = []
 
     def get(self, request):
         coffees = Coffee.objects.all()
@@ -20,7 +21,8 @@ class CoffeeListView(APIView):
 
 
 class CoffeeDetailView(APIView):
-    """GET /api/coffee/<id>/ - Get a single coffee"""
+    """GET /api/coffee/<id>/ - Get single coffee"""
+    authentication_classes = []
 
     def get(self, request, pk):
         coffee = get_object_or_404(Coffee, pk=pk)
@@ -29,7 +31,8 @@ class CoffeeDetailView(APIView):
 
 
 class CoffeeSearchView(APIView):
-    """POST /api/coffee/search/ - RAG-powered coffee search"""
+    """POST /api/coffee/search/ - RAG based semantic search"""
+    authentication_classes = []
 
     def post(self, request):
         query = request.data.get("query", "").strip()
@@ -69,22 +72,20 @@ class CoffeeSearchView(APIView):
 
 
 class CoffeeSelectView(APIView):
-    """POST /api/coffee/<id>/select/ - User selected this coffee"""
+    """POST /api/coffee/<id>/select/ - Record a coffee selection/order"""
+    authentication_classes = []
 
     def post(self, request, pk):
         coffee = get_object_or_404(Coffee, pk=pk)
 
-        # Create order record
+        # Siparişi kaydet (CoffeeOrder)
         CoffeeOrder.objects.create(coffee=coffee)
 
-        # Update the most recent search log for this coffee
-        SearchLog.objects.filter(
-            recommended_coffee=coffee,
-            was_selected=False,
-        ).order_by("-created_at").first()
-        SearchLog.objects.filter(
-            recommended_coffee=coffee,
-            was_selected=False,
-        ).order_by("-created_at").update(was_selected=True)
+        # Kullanıcı arama yaptıktan sonra butona tıkladığı için,
+        # sistemdeki en son yapılan aramayı "Seçildi (Evet)" olarak işaretle.
+        latest_log = SearchLog.objects.order_by("-created_at").first()
+        if latest_log and latest_log.was_selected == False:
+            latest_log.was_selected = True
+            latest_log.save()
 
         return Response({"message": f"Order recorded for {coffee.name}"})

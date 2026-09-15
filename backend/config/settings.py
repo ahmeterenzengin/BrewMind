@@ -1,4 +1,4 @@
-﻿import os
+import os
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -97,11 +97,12 @@ REST_FRAMEWORK = {
     ],
 }
 
-# CORS - Allow React dev server
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
+# CORS - Dinamik (Frontend URL'ine izin ver)
+# Localhost varsayılan olarak ekli, Vercel linki .env'den gelecek.
+_cors_origins = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")
+CORS_ALLOWED_ORIGINS = [origin.strip() for origin in _cors_origins if origin.strip()]
+
+# Eğer DEBUG=True (Geliştirici modu) ise her yere izin ver
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 # LLM Configuration
