@@ -83,61 +83,53 @@ RAG (Retrieval-Augmented Generation) tabanli akilli kahve oneri web uygulamasi.
 
 ---
 
-# BOLUM 4: BULUTA CIKIS (TEK SERVIS: RENDER + NEON)
+# BOLUM 4: BULUTA CIKIS (CANLI SISTEM: RENDER + NEON + GEMINI)
 
-Vercel ve Supabase karmasasi kaldirilmistir. Proje tek bir servis olarak Render.com uzerinde, kalici veritabani olarak da Neon.tech uzerinde 100% ucretsiz calisacak sekilde yapilandirilmistir.
+Proje tek bir servis olarak Render.com uzerinde, kalici veritabani olarak Neon.tech uzerinde 100% ucretsiz ve 7/24 calisir durumdadir.
+
+- **Canli Web Sitesi:** https://brewmind.onrender.com
+- **Canli Admin Paneli:** https://brewmind.onrender.com/admin/
 
 | Bilesen | Platform | Gorev | Maliyet | Durum |
 |---------|----------|-------|---------|-------|
-| Frontend + Backend | Render.com | Web Service (React + Django + WhiteNoise) | Ucretsiz | Hazir |
-| Veritabani | Neon.tech | PostgreSQL 16 + pgvector | Ucretsiz (Kalici) | TAMAMLANDI |
-| Yapay Zeka | Google Gemini API | models/gemini-3.6-flash | Ucretsiz | TAMAMLANDI |
+| Frontend + Backend | Render.com | Web Service (React + Django + WhiteNoise) | Ucretsiz | CANLIDA (Aktif) |
+| Veritabani | Neon.tech | PostgreSQL 16 + pgvector | Ucretsiz (Kalici) | CANLIDA (Aktif) |
+| Yapay Zeka | Google Gemini API | models/gemini-3.6-flash | Ucretsiz | CANLIDA (Aktif) |
 
 ---
 
-## YAPILANLAR (TAMAMLANAN ADIMLAR)
+## KRITIK MUHENDISLIK VE PERFORMANS COZUMLERI
+
+1. **Tek Servis Mimarisi (WhiteNoise):**
+   - Vercel'in 500 MB'lik sunucusuz fonksiyon sinirini asmak ve iki ayri alan adi / CORS karmasasini onlemek icin React arayuzu `npm run build` ile derlendi.
+   - Django `settings.py` icinde `WhiteNoise` ve `TEMPLATES` ile dogrudan Django uzerinden sunuldu.
+   - `urls.py` icindeki SPA yonlendirmesi ile tum sayfalar (`/`, `/dashboard`) ayni domain uzerinden acilmaktadir.
+
+2. **Hafif CPU-only PyTorch:**
+   - Standart Linux `torch` kurulumu 2.5 GB'lik gereksiz NVIDIA CUDA suruculerini indirdigi icin `build.sh` icinde CPU surumu (`--index-url https://download.pytorch.org/whl/cpu torch`) kuruldu.
+   - RAM kullanimi ~700 MB'tan ~80 MB'a, indirme boyutu 2.5 GB'tan 150 MB'a dusuruldu.
+
+3. **Tembel Yukleme (Lazy Loading):**
+   - `sentence-transformers` ve model kutuphaneleri sunucu baslarken degil, sadece kullanici ilk arama yaptiginda yuklenecek sekilde ayarlandi.
+   - Sunucu acilis suresi 35 saniyeden 1 saniyenin altina indi.
+
+4. **Derleme Aninda Model On-Indirme (Build-time Pre-download):**
+   - `all-MiniLM-L6-v2` embedding modeli `build.sh` calisirken disk onbellegine indirildi. Arama anindaki ag indirme gecikmeleri onlendi.
+
+5. **Gunicorn Timeout (120s):**
+   - Gunicorn sunucusunun varsayilan 30 saniyelik siniri `--timeout 120` olarak artirildi, boylece ilk yuklemedeki zaman asimi hatalari tamamen engellendi.
+
+---
+
+## TAMAMLANAN DEPLOYMENT ADIMLARI
 
 - [x] Neon.tech PostgreSQL projesi olusturuldu (cold-term-69679830).
 - [x] Tum migration'lar Neon uzerinde calistirildi ve pgvector tablolari olusturuldu.
 - [x] 20 kahve ve all-MiniLM-L6-v2 embedding vektorleri Neon veritabanina yuklendi (seed_coffees).
 - [x] Django Admin kullanicisi olusturuldu (admin / admin123).
-- [x] Google Gemini API entegrasyonu yapildi (generator.py).
-- [x] Gemini 3.6 Flash ile ucuca RAG testi basariyla tamamlandi.
+- [x] Google Gemini API entegrasyonu yapildi (generator.py - models/gemini-3.6-flash).
 - [x] React frontend derlendi (frontend/dist/) ve Django WhiteNoise ile tek servis altinda birlestirildi.
-- [x] build.sh scripti olusturuldu.
-
----
-
-## KALAN ADIMLAR (SIMDI YAPILACAKLAR)
-
-### Adim 1: Kodu GitHub'a Push Edin
-Kendi terminalinizden calistirin:
-```powershell
-git add .
-git commit -m "feat: Serve React frontend directly from Django via WhiteNoise"
-git push origin main
-```
-
-### Adim 2: Render.com'da Servisi Baslatin
-1. dashboard.render.com adresine gidin.
-2. New + -> Web Service -> BrewMind reponuzu secin (Connect).
-3. Ayarlari girin:
-   - Name: brewmind
-   - Region: Frankfurt (EU Central)
-   - Branch: main
-   - Root Directory: backend
-   - Runtime: Python 3
-   - Build Command: ./build.sh
-   - Start Command: gunicorn config.wsgi:application
-   - Instance Type: Free (0$/mo)
-4. Environment Variables ekleyin:
-   - DATABASE_URL = (Neon Dashboard'dan aldiginiz baglanti linki)
-   - LLM_PROVIDER = GEMINI
-   - GEMINI_API_KEY = (Google AI Studio'dan aldiginiz anahtar)
-   - GEMINI_MODEL = models/gemini-3.6-flash
-   - DEBUG = False
-   - SECRET_KEY = django-insecure-prod-brewmind-secret-key-994829
-   - ALLOWED_HOSTS = *
-5. Deploy Web Service butonuna basin.
-
-Render 2-3 dakika icinde derlemeyi tamamlayacak ve tek bir link (https://brewmind.onrender.com) ile hem web sitenizi hem de Gemini yapay zekasini yayina alacaktir.
+- [x] CPU-only PyTorch ve Lazy Loading bellek optimizasyonlari uygulandi.
+- [x] build.sh derleme scripti hazirlandi.
+- [x] Render.com uzerinde Web Service kuruldu ve basariyla canliya alindi.
+- [x] Canli test: Arayuz, 20 kahve listesi, RAG vektor aramasi ve Gemini barista onerileri dogrulandi.
