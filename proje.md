@@ -1,4 +1,4 @@
-﻿# BrewMind - Proje Dokumantasyonu
+# BrewMind - Proje Dokumantasyonu
 
 RAG (Retrieval-Augmented Generation) tabanli akilli kahve oneri web uygulamasi.
 
@@ -83,35 +83,61 @@ RAG (Retrieval-Augmented Generation) tabanli akilli kahve oneri web uygulamasi.
 
 ---
 
-# BOLUM 4: BULUTA CIKIS PLANI (~45-60 dk)
+# BOLUM 4: BULUTA CIKIS (TEK SERVIS: RENDER + NEON)
 
-| Parca | Platform | Maliyet |
-|-------|----------|---------|
-| Frontend | Vercel | Ucretsiz |
-| Backend | Render.com | Ucretsiz |
-| Veritabani | Supabase | Ucretsiz |
-| Yapay Zeka | Google Gemini API | Ucretsiz |
+Vercel ve Supabase karmasasi kaldirilmistir. Proje tek bir servis olarak Render.com uzerinde, kalici veritabani olarak da Neon.tech uzerinde 100% ucretsiz calisacak sekilde yapilandirilmistir.
 
-## Faz 1: Kod Degisiklikleri (~15 dk)
-- generator.py: Gemini API entegrasyonu
-- settings.py: DATABASE_URL + whitenoise + dinamik ayarlar
-- build.sh: Render deploy scripti
+| Bilesen | Platform | Gorev | Maliyet | Durum |
+|---------|----------|-------|---------|-------|
+| Frontend + Backend | Render.com | Web Service (React + Django + WhiteNoise) | Ucretsiz | Hazir |
+| Veritabani | Neon.tech | PostgreSQL 16 + pgvector | Ucretsiz (Kalici) | TAMAMLANDI |
+| Yapay Zeka | Google Gemini API | models/gemini-3.6-flash | Ucretsiz | TAMAMLANDI |
 
-## Faz 2: Hesap Acma (~15-20 dk)
-- Gemini API Key: aistudio.google.com
-- Supabase: supabase.com (pgvector destekli PostgreSQL)
-- Render.com: render.com (Django hosting)
-- Vercel: Mevcut hesap
+---
 
-## Faz 3: Deploy (~15-25 dk)
-- Supabase'e veri yukleme (migrate + seed)
-- Render'a backend deploy
-- Vercel'e frontend deploy
-- Son test
+## YAPILANLAR (TAMAMLANAN ADIMLAR)
 
-## Gemini API Ucretsiz Limitleri
+- [x] Neon.tech PostgreSQL projesi olusturuldu (cold-term-69679830).
+- [x] Tum migration'lar Neon uzerinde calistirildi ve pgvector tablolari olusturuldu.
+- [x] 20 kahve ve all-MiniLM-L6-v2 embedding vektorleri Neon veritabanina yuklendi (seed_coffees).
+- [x] Django Admin kullanicisi olusturuldu (admin / admin123).
+- [x] Google Gemini API entegrasyonu yapildi (generator.py).
+- [x] Gemini 3.6 Flash ile ucuca RAG testi basariyla tamamlandi.
+- [x] React frontend derlendi (frontend/dist/) ve Django WhiteNoise ile tek servis altinda birlestirildi.
+- [x] build.sh scripti olusturuldu.
 
-| Model | Dakikada (RPM) | Gunde (RPD) |
-|-------|:---:|:---:|
-| Gemini 3 Flash | ~10 | ~1,500 |
-| Gemini 2.5 Flash | ~10 | ~1,500 |
+---
+
+## KALAN ADIMLAR (SIMDI YAPILACAKLAR)
+
+### Adim 1: Kodu GitHub'a Push Edin
+Kendi terminalinizden calistirin:
+```powershell
+git add .
+git commit -m "feat: Serve React frontend directly from Django via WhiteNoise"
+git push origin main
+```
+
+### Adim 2: Render.com'da Servisi Baslatin
+1. dashboard.render.com adresine gidin.
+2. New + -> Web Service -> BrewMind reponuzu secin (Connect).
+3. Ayarlari girin:
+   - Name: brewmind
+   - Region: Frankfurt (EU Central)
+   - Branch: main
+   - Root Directory: backend
+   - Runtime: Python 3
+   - Build Command: ./build.sh
+   - Start Command: gunicorn config.wsgi:application
+   - Instance Type: Free (0$/mo)
+4. Environment Variables ekleyin:
+   - DATABASE_URL = (Neon Dashboard'dan aldiginiz baglanti linki)
+   - LLM_PROVIDER = GEMINI
+   - GEMINI_API_KEY = (Google AI Studio'dan aldiginiz anahtar)
+   - GEMINI_MODEL = models/gemini-3.6-flash
+   - DEBUG = False
+   - SECRET_KEY = django-insecure-prod-brewmind-secret-key-994829
+   - ALLOWED_HOSTS = *
+5. Deploy Web Service butonuna basin.
+
+Render 2-3 dakika icinde derlemeyi tamamlayacak ve tek bir link (https://brewmind.onrender.com) ile hem web sitenizi hem de Gemini yapay zekasini yayina alacaktir.

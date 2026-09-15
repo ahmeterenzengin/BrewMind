@@ -1,6 +1,9 @@
-﻿# Environments
+# Environments (Tüm .env dosyaları - hiçbir klasörden sızamaz)
 .env
 .env.*
+*.env
+**/.env
+**/.env.*
 !.env.example
 
 # Python / Django
@@ -11,11 +14,11 @@ __pycache__/
 .Python
 backend/venv/
 backend/env/
+backend/staticfiles/
 db.sqlite3
 
 # Node / React (Frontend)
 frontend/node_modules/
-frontend/dist/
 frontend/.eslintcache
 npm-debug.log*
 
