@@ -47,6 +47,8 @@ def generate_recommendation(query: str, results: list[dict]) -> str:
 
     if provider == "CLAUDE":
         return _generate_claude(prompt)
+    elif provider == "GEMINI":
+        return _generate_gemini(prompt)
     else:
         return _generate_lm_studio(prompt)
 
@@ -106,6 +108,36 @@ def _generate_claude(prompt: str) -> str:
         return message.content[0].text.strip()
     except Exception as e:
         print(f"[Claude] Error: {e}")
+        return _fallback_recommendation(prompt)
+
+
+def _generate_gemini(prompt: str) -> str:
+    """Call Google Gemini API using OpenAI-compatible endpoint."""
+    try:
+        from openai import OpenAI
+
+        client = OpenAI(
+            api_key=settings.GEMINI_API_KEY,
+            base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+        )
+
+        response = client.chat.completions.create(
+            model=getattr(settings, "GEMINI_MODEL", "models/gemini-3.6-flash"),
+            messages=[
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.4,
+            max_tokens=1000,
+        )
+        content = response.choices[0].message.content
+        if content and content.strip():
+            return content.strip()
+
+        print("[Gemini] Model returned empty content, using fallback")
+        return _fallback_recommendation(prompt)
+
+    except Exception as e:
+        print(f"[Gemini] Error: {e}")
         return _fallback_recommendation(prompt)
 
 
