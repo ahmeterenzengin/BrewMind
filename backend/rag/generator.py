@@ -155,7 +155,7 @@ def _generate_groq(prompt: str) -> str:
         )
 
         response = client.chat.completions.create(
-            model=getattr(settings, "GROQ_MODEL", "llama-3.1-8b-instant"),
+            model=getattr(settings, "GROQ_MODEL", "openai/gpt-oss-20b"),
             messages=[
                 {"role": "user", "content": prompt},
             ],
