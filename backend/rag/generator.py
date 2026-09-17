@@ -160,13 +160,21 @@ def _generate_groq(prompt: str) -> str:
                 {"role": "user", "content": prompt},
             ],
             temperature=0.4,
-            max_tokens=150,
+            max_tokens=1000,
         )
-        content = response.choices[0].message.content
-        if content and content.strip():
-            return content.strip()
+        message = response.choices[0].message
+        content = message.content or ""
+        if not content.strip():
+            content = getattr(message, "reasoning_content", "") or ""
 
-        print("[Groq] Model returned empty content, using fallback")
+        # Remove any internal thinking tags if present
+        import re
+        content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
+
+        if content:
+            return content
+
+        print(f"[Groq] Model returned empty content (finish_reason: {response.choices[0].finish_reason}), using fallback")
         return _fallback_recommendation(prompt)
 
     except Exception as e:
