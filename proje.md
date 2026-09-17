@@ -14,9 +14,10 @@ RAG (Retrieval-Augmented Generation) tabanli akilli kahve oneri web uygulamasi.
 | Grafikler | Recharts | Dashboard grafikleri |
 | Backend | Python + Django + DRF | Web framework, REST API |
 | Veritabani | PostgreSQL + pgvector | Vektor veritabani |
-| Embedding | sentence-transformers (MiniLM) | Metin -> vektor |
+| Embedding | fastembed (ONNX MiniLM) | Ultra hafif (35MB RAM) metin -> vektor |
 | LLM (Local) | LM Studio (Gemma vb.) | Yerel yapay zeka |
-| LLM (Bulut) | Google Gemini API | Bulut yapay zeka |
+| LLM (Bulut) | Google Gemini / Groq LPU | Bulut yapay zeka (Ultra hizli LPU inference) |
+
 
 ## API Endpointleri
 
@@ -105,9 +106,10 @@ Proje tek bir servis olarak Render.com uzerinde, kalici veritabani olarak Neon.t
    - Django `settings.py` icinde `WhiteNoise` ve `TEMPLATES` ile dogrudan Django uzerinden sunuldu.
    - `urls.py` icindeki SPA yonlendirmesi ile tum sayfalar (`/`, `/dashboard`) ayni domain uzerinden acilmaktadir.
 
-2. **Hafif CPU-only PyTorch:**
-   - Standart Linux `torch` kurulumu 2.5 GB'lik gereksiz NVIDIA CUDA suruculerini indirdigi icin `build.sh` icinde CPU surumu (`--index-url https://download.pytorch.org/whl/cpu torch`) kuruldu.
-   - RAM kullanimi ~700 MB'tan ~80 MB'a, indirme boyutu 2.5 GB'tan 150 MB'a dusuruldu.
+2. **FastEmbed (ONNX Runtime) ile PyTorch'tan Kurtulma (RAM: 35 MB):**
+   - Render'in 512 MB RAM sinirinda PyTorch (sentence-transformers) 550 MB RAM tuketip sunucuyu kilitledigi (SIGKILL / 502) icin, C++ ONNX Runtime tabanli `fastembed` kutuphanesine gecildi.
+   - Birebir ayni `all-MiniLM-L6-v2` modeli sifir PyTorch ile calistirildi.
+   - RAM kullanimi 550 MB'tan ~35 MB'a (%94 tasarruf) dusuruldu ve bellek yetersizligi sorunu kokten cozuldu.
 
 3. **Tembel Yukleme (Lazy Loading):**
    - `sentence-transformers` ve model kutuphaneleri sunucu baslarken degil, sadece kullanici ilk arama yaptiginda yuklenecek sekilde ayarlandi.

@@ -49,8 +49,11 @@ def generate_recommendation(query: str, results: list[dict]) -> str:
         return _generate_claude(prompt)
     elif provider == "GEMINI":
         return _generate_gemini(prompt)
+    elif provider == "GROQ":
+        return _generate_groq(prompt)
     else:
         return _generate_lm_studio(prompt)
+
 
 
 def _generate_lm_studio(prompt: str) -> str:
@@ -138,6 +141,36 @@ def _generate_gemini(prompt: str) -> str:
 
     except Exception as e:
         print(f"[Gemini] Error: {e}")
+        return _fallback_recommendation(prompt)
+
+
+def _generate_groq(prompt: str) -> str:
+    """Call Groq API using OpenAI-compatible endpoint."""
+    try:
+        from openai import OpenAI
+
+        client = OpenAI(
+            base_url="https://api.groq.com/openai/v1",
+            api_key=settings.GROQ_API_KEY,
+        )
+
+        response = client.chat.completions.create(
+            model=getattr(settings, "GROQ_MODEL", "llama-3.1-8b-instant"),
+            messages=[
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.4,
+            max_tokens=150,
+        )
+        content = response.choices[0].message.content
+        if content and content.strip():
+            return content.strip()
+
+        print("[Groq] Model returned empty content, using fallback")
+        return _fallback_recommendation(prompt)
+
+    except Exception as e:
+        print(f"[Groq] Error: {e}")
         return _fallback_recommendation(prompt)
 
 
